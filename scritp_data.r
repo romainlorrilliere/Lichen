@@ -3,6 +3,8 @@ require(RODBC)
 require(gdata)
 require(data.table)
 require(reshape2)
+require(sf)
+
 
 
 library(readxl)
@@ -77,3 +79,12 @@ dd2 <- dd2[,c("site","arbre","face","sample","sp","ab","NAME","CODE_INSEE","Dept
 cat("  --> data/data_lyon_coord.csv")
 write.csv(dd2,"data/data_lyon_coord.csv",row.names=FALSE)
 cat("   DONE !\n")
+
+
+
+
+
+
+go <- st_read("https://services3.arcgis.com/Is0UwT37raQYl9Jj/arcgis/rest/services/emi_grand_est_epci_2016/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json")
+
+plot(go)
