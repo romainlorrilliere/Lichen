@@ -8,7 +8,7 @@ output:
     fig_height: 12
     fig_width: 16
     toc: yes
-    toc_depth: 2
+    toc_depth: 3
     number_sections: true
     code_folding: hide
   pdf_document:
@@ -21,7 +21,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message=FALSE)
 ```
 
-## Initialisation
+# Initialisation
 
 Installation des packages
 ```{r install packages}
@@ -41,6 +41,40 @@ source("fun_exploration.r")
 
 L'ensemble des données sont stockée dans un dossier nommée _data/_
 
+La table finales aura les colonnes suivantes: 
+
+* _date_str_: date dans un format character 
+* _annee_str_: année(s) dans un format character 
+* _annee_min_: première année du suivie 
+* _annee_max_: dernière année du suivie 
+* _region_: région
+* _site\_id_: id du site
+* _site\_code_: le code du site 
+* _commune_: commune 
+* _insee_: code insee de la commune
+* _dept_: departement
+* _long\_l93_: longitude dans la projection Lambert 93
+* _lat\_l93_: latitude dans la projection Lambert 93 
+* _dept_: departement 
+* _arbre\_id_: id de l'arbre la concaténation du site_id et de l'_arbre\_num_ 
+* _arbre\_num_: numéros de l'arbre
+* _arbre\_nbtot_: le nombre total d'arbre du site 
+* _arbre\_sp\_fr_: nom français de l'espèce de l'arbre 
+* _arbre\_sp\_sc_: nom scientifique de l'espèce de l'arbre 
+* _arbre\_circ_: circonference l'arbre
+* _face_: la face (Nord, Ouest, Sud, Est)
+* _sp_: l'espèce de lichen 
+* _ab_: l'abondance
+
+
+
+
+```{r colonne}
+lesColonnes <- c("date_str","annee_str","annee_min","annee_max","region","site_id","site_code","commune","insee","dept","lon_l93","lat_l93","arbre_id","arbre_num","arbre_nbtot","arbre_sp_fr","arbre_sp_sc","arbre_circ","face","sample","sp","ab")
+
+```
+
+
 ### Données de Grégory Agnello dans la vallée du Rhône
 
 * _Data_Lyon.csv_ : nom des sites + abondance des lichens par face et par quadra
@@ -53,27 +87,24 @@ il n'y a pas d'info sur l'espèce de l'arbre ou sa circonférence.
 
 On renomme aussi les colonnes pour supprimer les majuscules et faire plus propre
 
-Ajout de plusieurs colonnes
+Ajout de plusieurs colonnes:
+
 * _site\_id_: id du site avec un _R_ comme prefixe
-* _date_str_: date dans un format character -> "avril 2009 - avril 2012"
-* _annee_str_: année(s) dans un format character -> "2009-2012"
-* _annee_min_: première année du suivie -> 2009
-* _annee_max_: dernière année du suivie -> 2012
-* _arbre\_sp\_fr_: nom français de l'espèce de l'arbre -> _NA_
-* _arbre\_sp\_sc_: nom scientifique de l'espèce de l'arbre -> _NA_
-* _arbre\_circ_: circonference l'arbre -> _NA_
+* _date_str_: "avril 2009 - avril 2012"
+* _annee_str_: "2009-2012"
+* _annee_min_: 2009
+* _annee_max_: 2012
+* _arbre\_sp\_fr_: _NA_
+* _arbre\_sp\_sc_: _NA_
+* _arbre\_circ_: _NA_
 * _region_: Rhone
 * _arbre\_id_: id de l'arbre la concaténation du site_id et de l'_arbre\_num_ 
-* _arbre\_nbtot_: le nombre total d'arbre du site 
 
 
 
 
-```{r data_rhone}
+```{r data_rhone1}
 ## importation
-
-lesColonnes <- c("date_str","annee_str","annee_min","annee_max","region","site_id","site_code","commune","insee","dept","lon_l93","lat_l93","arbre_id","arbre_num","arbre_nbtot","arbre_sp_fr","arbre_sp_sc","arbre_circ","face","sample","sp","ab")
-
 d.rhone <- fread("data/data_rhone_coord.csv")
 
 d.rhone$date_str <- "avril 2009 - avril 2012"
@@ -94,26 +125,39 @@ colnames(d.rhone)[colnames(d.rhone)=="Y"] <- "lat_l93"
 colnames(d.rhone)[colnames(d.rhone)=="arbre"] <- "arbre_num"
 d.rhone$arbre_id <- paste(d.rhone$site_id,d.rhone$arbre_num,sep="_")
 d.rhone$sample <- as.numeric(gsub("R","",d.rhone$sample))
+```
 
+Ajout de la colonne  _arbre\_nbtot_ du nombre total d'arbre par site 
+
+
+```{r data_rhone2}
 d.max <- aggregate(arbre_num ~ site_id,d.rhone,max)
 colnames(d.max)[2] <- "arbre_nbtot"
-cat("Distribution du nombre d'arbre par site\n")
-summary(as.factor(d.max$arbre_nbtot))
-
-d.rhone <- data.table(inner_join(d.rhone,d.max))
-
-d.rhone <- d.rhone[,lesColonnes,with=FALSE]
-
-head(d.rhone)
-cat("Les dimension de la table rhone\n")
-dim(d.rhone)
-
 ```
+
+Distribution du nombre d'arbre par site
+```{r arbre_nbtot_rhone}
+data.table(table(d.max$arbre_nbtot))
+```
+
+Finalisation de la table Rhône
+```{r data_rhone3}
+d.rhone <- data.table(inner_join(d.rhone,d.max))
+d.rhone <- d.rhone[,lesColonnes,with=FALSE]
+data.table(head(d.rhone))
+```
+
+Dimension de la table Rhône
+```{r data_rhone4}
+dim(d.rhone)
+```
+
 
 ### Données de Jonathan Signoret dans le Grand-Est
 
 
 * _data_grandest.csv_ : id site + coord (en L93) + taxon arbre (pas toujours renseigné) + circonférence de l'arbre (pas toujours renseignée) + abondance des lichens par face et par quadrat => __c'est ce fichier qu'on utilise__
+
 
 Ces données de la région Grand Est sont à formater, les 4 faces et 5 réplicat sont en colonnes.
 
@@ -129,31 +173,16 @@ On a 54 sites avec 1 arbre, 61 avec 2 et 52 avec 3 -> on ne peut pas "dégrader"
 On ajoute dans les deux jeux de donnéées le nombre d'arbres total par site.
 
 
-Ajout de plusieurs colonnes
+Ajout de plusieurs colonnes:
+
 * _site\_id_: id du site avec un _GE_ comme prefixe
-* _date_str_: date dans un format character -> "dans les annees 2000s"
-* _annee_str_: année(s) dans un format character -> "2000~2009"
-* _annee_min_: première année du suivie -> 2000
-* _annee_max_: dernière année du suivie -> 2009
 * _region_: Grand-Est
-* _arbre\_num_: increment de l'arbre sur le site -> ici construit par l'algorithme
-* _arbre\_id_: id de l'arbre la concaténation du site_id et de l'_arbre\_num_ 
-* _arbre\_nbtot_: le nombre total d'arbre du site 
-* _commune_: commune -> NA
-* _insee_: code insee de la commune ->  NA
-* _dept_: departement -> NA
 
 
-
-il faut nettoyer les noms des lichen 
-
-Pour connaitre pouvoir retrouver l'arbre sur lequel ont été réalisé
-les samples on ne garde pas les site pour lesquelles ont a pas
-d'espèces d'arbre et pas de circonférence.
 
 
 ```{r data_grandest}
-
+## importation
 d.ge <- fread("data/data_grandest.csv")
 
 
@@ -162,35 +191,85 @@ colnames(d.ge)[1:length(premiere_col)] <- premiere_col
 
 d.ge$region <- "Grand-Est"
 d.ge$site_id <- paste("GE",d.ge$site_code,sep="_")
+```
+
+
+Pour connaitre et pouvoir retrouver l'arbre sur lequel ont été réalisé
+les samples on ne gardera pas les site pour lesquelles ont a pas
+d'espèces d'arbre et pas de circonférence.
+
+
+```{r data_grandest0}
+nbrow.tot <- nrow(d.ge)
+i_keeped <-which(!is.na(d.ge$arbre_circ)& d.ge$arbre_sp_sc != "" &!is.na(d.ge$arbre_sp_sc))
+d.ge<- d.ge[i_keeped]
+nbrow.new <- nrow(d.ge)
+
+``` 
+
+
+Sur les `r nbrow.tot` lignes, `r nbrow.new` sont conservées. 
+
+
+Calcul et Ajout de plusieurs colonnes:
+
+* _arbre_: un identifiant temporaire de l'arbre, associant l'espèce d'arbre et sa circonférence
+* _arbre\_num_: increment de l'arbre sur le site -> ici construit par l'algorithme
+* _arbre\_nbtot_: le nombre total d'arbre du site 
+
+
+```{r data_grandest1}
 d.ge$arbre <- paste0(d.ge$arbre_sp_sc,d.ge$arbre_circ)
+
 d.unique <- data.table(unique(d.ge[,c("site_id","arbre")]))
 d.unique <- d.unique[,arbre_num := 1:.N,by=site_id]
 
-##head(d.unique)
-
 d.max <- aggregate(arbre_num ~ site_id, d.unique,max)
-###head(d.max)
 colnames(d.max)[2] <- "arbre_nbtot"
 
-cat("Distribution du nombre d'arbre par site\n")
-summary(as.factor(d.max$arbre_nbtot))
-
 d.unique <- inner_join(d.unique,d.max)
-##head(d.unique)
-
 d.ge <- inner_join(d.ge,d.unique)
-##head(d.ge)
+
+```
+
+
+Distribution du nombre d'arbre par site
+
+```{r data_grandest2}
+data.table(table(d.max$arbre_nbtot))
+```
+
+
+Renversement de la table pour obtenir les colonnes face, sample et ab
+
+```{r data_grandest3}
 
 premiere_col <- c(premiere_col,"arbre","arbre_num","arbre_nbtot","region","site_id")
+
 d.ge <- data.table(melt(d.ge, id.vars = premiere_col))
-##head(d.ge)
+
 d.ge$face <- substr(d.ge$variable,1,1)
 vecFace <- c("N"="Nord","E"="Est","S"="Sud","O"="Ouest")
+
 d.ge$face<- vecFace[d.ge$face]
 d.ge$sample <- as.numeric(substr(d.ge$variable,2,nchar(as.character(d.ge$variable))))
-
 colnames(d.ge)[colnames(d.ge)=="value"] <- "ab"
+```
 
+
+Ajout de plusieurs colonnes:
+
+* _date_str_: "dans les annees 2000s"
+* _annee_str_: "2000~2009"
+* _annee_min_: 2000
+* _annee_max_: 2009
+* _commune_: NA
+* _insee_: NA
+* _dept_:  NA
+* _arbre\_id_: id de l'arbre la concaténation du site_id et de l'_arbre\_num_ 
+
+
+```{r data_grandest4}
 d.ge$date_str <- "dans les annees 2000s"
 d.ge$annee_str <- "2000~2009"
 d.ge$annee_min <- "2000"
@@ -201,16 +280,27 @@ d.ge$dept <- NA
 head(d.ge)
 
 d.ge$arbre_id <- paste(d.ge$site_id,d.ge$arbre_num,sep="_")
+```
+
+
+__Finalisation__
+
+
+```{r data_grandest5}
 
 d.ge <- d.ge[,lesColonnes,with=FALSE]
-
-
-
 head(d.ge)
 
-cat("Dimension de la table Grand-Est:\n")
+```
+
+
+
+Dimension de la table Grand-Est:
+
+```{r data_grandest6}
 dim(d.ge)
 ```
+
 
 
 ### Assemblage
@@ -242,18 +332,15 @@ __Reste à faire!__
 
 
 
-* Fichier _extraction\_donnees\_sorbonne.xlsx_ : données horaires de mesure du 01/01/2004 au 01/01/2008
-Un feuillet par polluant (ozone, dioxyde d'azote, PM10 et PM2,5)
+* Fichier _extraction\_donnees\_sorbonne.xlsx_ : données horaires de
+ mesure du 01/01/2004 au 01/01/2008, un feuillet par polluant (ozone, dioxyde d'azote, PM10 et PM2,5)
 * Fichier _donnees\_sorbonne.csv_ : données journaliéres de mesure du
 01/01/2008 au 01/01/2013. Ici tous les polluants sont dans le méme feuillet (monoxyde d'azote, dioxyde d'azote, PM10 + nombreuses spécifications (ajustées, résultantes...)
-Fichier coordonnees_stations : coordonnees des stations de mesure en L93
+* Fichier coordonnees_stations : coordonnees des stations de mesure en L93
 
 Nous réorganisons les jeux de données pour avoir les colonnes
 suivantes: 
 organisme, station, date,heure,mesure,type,valeur,etat...
-
-
-Les polluants sont traduit en code, renseigné dans le fichier : _library/code_polluants.csv_
 
 
 __Les donnes de 2004 à 2008: _extraction\_donnees\_sorbonne.xlsx_ -->
@@ -262,35 +349,37 @@ A faire! __
 
 __Les donnes de 2008 à 2013: _donnees\_sorbonne.csv_ __
 
-```{r air_rhone}
+Aggregation des champs de définition des mesures de polluants et
+retournement du tableau
 
+
+```{r air_rhone}
+## importation
 air.rhone2 <- fread("data/donnees_sorbonne.csv")
 
-dim(air.rhone2)
-head(air.rhone2)
-
-
-air.rhone2bis <- air.rhone2[5:nrow(air.rhone2),]
-col <- apply(air.rhone2[1:4,],2,paste,collapse="|")
-colnames(air.rhone2bis) <- col
-colnames(air.rhone2bis)[1] <- "date_complet"
-#head(air.rhone2bis)
-
-air.rhone2bis <- data.table(melt(air.rhone2bis, id.vars = "date_complet"))
-head(air.rhone2bis)
-
-
+## aggregation des champs definissant une mesure
 col <- apply(air.rhone2[1:4,],2,paste,collapse="#")
 
-
+## simplification de la table pour pouvoir la retourner automatiquement
 air.rhone2 <- air.rhone2[5:nrow(air.rhone2),]
-
 colnames(air.rhone2) <- col
 colnames(air.rhone2)[1] <- "date_complet"
 
 air.rhone2 <- data.table(melt(air.rhone2, id.vars = "date_complet"))
-head(air.rhone2)
+data.table(head(air.rhone2))
+```
 
+
+Re-construction des champs de definition des mesures de polluants: 
+
+* _variable_
+* _station_
+* _polluant_
+* _periode_
+* _type_
+
+
+```{r air_rhone2}
 
 varunique <- unique(air.rhone2[,"variable"])
 dim(varunique)
@@ -305,29 +394,58 @@ dunique   <- cbind(variable,as.data.frame(mat))
 colnames(dunique) <- c("variable","station","polluant","periode","type")
 
 air.rhone2 <- inner_join(air.rhone2,dunique)
+```
+
+
+Remise en deux colonnes: 
+
+* _Valeur_
+* _Etat_
+
+```{r air_rhone3}
 
 air.rhone2 <- data.table(air.rhone2[,-2])
 air.rhone2 <- dcast(air.rhone2, formula = date_complet + station + polluant + periode ~ type, value.var = "value")
 air.rhone2$Valeur <- as.numeric(as.character(air.rhone2$Valeur))
 air.rhone2$Etat <- as.factor(air.rhone2$Etat)
+```
 
+
+Les polluants sont traduit en code, renseigné dans le fichier : _library/code_polluants.csv_
+
+Importation de la table de traduction des nom de polluants en code_polluant
+
+
+```{r air_rhone4}
 code_po <- fread("library/code_polluants.csv")
-head(code_po)
+print(code_po)
+```
+
+Création des colonnes:
+
+* _code\_polluant_
+* _date_
+
+```{r air_rhone5}
 
 air.rhone2 <- left_join(air.rhone2,code_po)
 air.rhone2$code_polluant <- as.factor(air.rhone2$code_polluant)
-
-head(air.rhone2)
-summary(air.rhone2)
-
 air.rhone2$date <- as.Date(substr(air.rhone2$date_complet,1,10),"%d/%m/%Y")
-head(air.rhone2)
-summary(air.rhone2)
+
+data.table(head(air.rhone2))
+
 ```
 
 
 Les données de 2004 à 2007 sont horaires. On les moyenne
 quotidiennement. 
+
+* Valeur: moyenne journalière de la valeur
+* tot: nombre de mesure durant la journée
+* etatA: proportion du nombre de etat == A lors durant la journée
+* etatD: proportion du nombre de etat == D lors durant la journée
+* etatN: proportion du nombre de etat == N lors durant la journée
+* etatR: proportion du nombre de etat == R lors durant la journée
 
 ```{r rhone2_2_day, eval=TRUE}
 air.rhone2.jour <- aggregate(Valeur ~ date + station + code_polluant, air.rhone2, mean, na.rm = TRUE)
@@ -348,9 +466,11 @@ colnames(tab_etat)[4:8] <- c("etat_A","etat_D","etat_N","etat_R","nb_mesure")
 
 air.rhone2.jour <- inner_join(air.rhone2.jour,tab_etat)
 
-head(air.rhone2.jour)
+data.table(head(air.rhone2.jour))
+```
 
-cat("Sauvegarde de la table: data/polluant_rhone2_jour.csv \n")
+Finalisation: sauvegarde de la table: data/polluant_rhone2_jour.csv \n")
+```{r air_rhone6}
 write.csv(air.rhone2.jour,"data/polluant_rhone2_jour.csv",row.names=FALSE)
 ```
 
