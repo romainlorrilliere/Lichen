@@ -1,5 +1,5 @@
 ---
-title: '**Exploration des données LichenGo**'
+title: '**Exploration des donn??es LichenGo**'
 author: "Laure & Romain"
 date: "`r Sys.Date()`"
 output:
@@ -14,6 +14,7 @@ output:
     toc_depth: '1'
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message=FALSE)
 ```
@@ -26,7 +27,6 @@ Installation des packages
 library(data.table)
 library(dplyr)
 library(ggplot2)
-library(lubridate)
 
 #source("fun_exploration.r")
 
@@ -34,11 +34,11 @@ library(lubridate)
 
 # Chargement des data
 
-## les données lichens
+## les donn??es lichens
 
 ### Rhone 
 
-Les données du Rhones sont propre, on ajoute juste la date flou
+Les donn??es du Rhones sont propre, on ajoute juste la date flou
 
 ```{r data_rhone}
 ## importation
@@ -83,14 +83,14 @@ dim(d.rhone)
 
 ### Grand-Est
 
-Les données de la région Grand Est sont à formater
-Les 4 faces et 5 réplicat sont en colonnes avec data d'abondance
+Les donn??es de la r??gion Grand Est sont ?? formater
+Les 4 faces et 5 r??plicat sont en colonnes avec data d'abondance
 
 il faut nettoyer les noms des lichen et changer les noms des colonnes
 
-Pour connaitre pouvoir retrouver l'arbre sur lequel ont été réalisé
+Pour connaitre pouvoir retrouver l'arbre sur lequel ont ??t?? r??alis??
 les samples on ne garde pas les site pour lesquelles ont a pas
-d'espèces d'arbre et pas de circonférence.
+d'esp??ces d'arbre et pas de circonf??rence.
 
 
 ```{r data_grandest}
@@ -152,7 +152,7 @@ head(d.ge)
 
 ### Assemblage
 
-concaténation des deux jeux de données
+concat??nation des deux jeux de donn??es
 
 
 ```{r data}
@@ -167,14 +167,14 @@ write.csv(d,"data/data_lichen_rhone_grandest.csv",row.names=FALSE)
 
 
 
-## Les données qualité de l'air
+## Les donn??es qualit?? de l'air
 
 ### Rhones
 
-Il faut assemblé deux jeux de données _donnees_sorbonne.csv_ et
+Il faut assembl?? deux jeux de donn??es _donnees_sorbonne.csv_ et
 _extraction_donnnes_sorbonne.xlsx_
 
-Nous réorganisons les jeux de données pour avoir les colonnes
+Nous r??organisons les jeux de donn??es pour avoir les colonnes
 suivantes: 
 organisme, station, date,heure,mesure,type,valeur,etat
 
@@ -185,6 +185,16 @@ air.rhone1 <- fread("data/donnees_sorbonne.csv")
 dim(air.rhone1)
 head(air.rhone1)
 
+<<<<<<< HEAD
+air.rhone1bis <- air.rhone1[5:nrow(air.rhone1),]
+col <- apply(air.rhone1[1:4,],2,paste,collapse="|")
+colnames(air.rhone1bis) <- col
+colnames(air.rhone1bis)[1] <- "date_complet"
+#head(air.rhone1bis)
+
+air.rhone1bis <- data.table(melt(air.rhone1bis, id.vars = "date_complet"))
+head(air.rhone1bis)
+=======
 col <- apply(air.rhone1[1:4,],2,paste,collapse="#")
 
 
@@ -231,13 +241,15 @@ summary(air.rhone1)
 ```
 
 
-Les données de 2004 à 2007 les données sont horaires. On les moyenne
+Les donn??es de 2004 ?? 2007 les donn??es sont horaires. On les moyenne
 quotidiennement. 
 
 ```{r rhone1_2_day}
 air.rhone1.jour <- aggregate(Valeur ~ date + station + code_polluant, air.rhone1, mean, na.rm = TRUE)
 colnames(air.rhone1.jour)[ncol(air.rhone1.jour)] <- "valeur"
+>>>>>>> upstream/master
 
+var <- as.data.frame(strsplit(as.character(air.rhone1bis$variable),"|"))
 
 tab_etat <- aggregate(Valeur ~ date + station + code_polluant + Etat,air.rhone1,length)
 tab_etat <- dcast(tab_etat,formula = date + station + code_polluant ~ Etat, value.var="Valeur")
