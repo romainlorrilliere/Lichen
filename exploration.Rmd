@@ -13,7 +13,8 @@ output:
     toc: yes
     toc_depth: '1'
 ---
-# c
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message=FALSE)
 ```
@@ -124,7 +125,7 @@ premiere_col <- c(premiere_col,"arbre","arbre_num","arbre_nbtot","region","site_
 d.ge <- data.table(melt(d.ge, id.vars = premiere_col))
 head(d.ge)
 d.ge$face <- substr(d.ge$variable,1,1)
-vecFace <- c("N"="Nord","E"="ESt","S"="Sud","O"="Ouest")
+vecFace <- c("N"="Nord","E"="Est","S"="Sud","O"="Ouest")
 d.ge$face<- vecFace[d.ge$face]
 d.ge$sample <- as.numeric(substr(d.ge$variable,2,nchar(as.character(d.ge$variable))))
 
@@ -184,6 +185,7 @@ air.rhone1 <- fread("data/donnees_sorbonne.csv")
 dim(air.rhone1)
 head(air.rhone1)
 
+<<<<<<< HEAD
 air.rhone1bis <- air.rhone1[5:nrow(air.rhone1),]
 col <- apply(air.rhone1[1:4,],2,paste,collapse="|")
 colnames(air.rhone1bis) <- col
@@ -192,7 +194,77 @@ colnames(air.rhone1bis)[1] <- "date_complet"
 
 air.rhone1bis <- data.table(melt(air.rhone1bis, id.vars = "date_complet"))
 head(air.rhone1bis)
+=======
+col <- apply(air.rhone1[1:4,],2,paste,collapse="#")
+
+
+air.rhone1 <- air.rhone1[5:nrow(air.rhone1),]
+
+colnames(air.rhone1) <- col
+colnames(air.rhone1)[1] <- "date_complet"
+
+air.rhone1 <- data.table(melt(air.rhone1, id.vars = "date_complet"))
+head(air.rhone1)
+
+
+varunique <- unique(air.rhone1[,"variable"])
+dim(varunique)
+
+varunique$variable <- as.character(varunique$variable)
+variable <- varunique$variable
+
+temp <- strsplit(variable,"#")
+
+mat  <- matrix(unlist(temp), ncol=4, byrow=TRUE)
+dunique   <- cbind(variable,as.data.frame(mat))
+colnames(dunique) <- c("variable","station","polluant","periode","type")
+
+air.rhone1 <- inner_join(air.rhone1,dunique)
+
+air.rhone1 <- data.table(air.rhone1[,-2])
+air.rhone1 <- dcast(air.rhone1, formula = date_complet + station + polluant + periode ~ type, value.var = "value")
+air.rhone1$Valeur <- as.numeric(as.character(air.rhone1$Valeur))
+air.rhone1$Etat <- as.factor(air.rhone1$Etat)
+
+code_po <- fread("library/code_polluants.csv")
+head(code_po)
+
+air.rhone1 <- left_join(air.rhone1,code_po)
+air.rhone1$code_polluant <- as.factor(air.rhone1$code_polluant)
+
+head(air.rhone1)
+summary(air.rhone1)
+
+air.rhone1$date <- as.Date(substr(air.rhone1$date_complet,1,10),"%d/%m/%Y")
+head(air.rhone1)
+summary(air.rhone1)
+```
+
+
+Les donn??es de 2004 ?? 2007 les donn??es sont horaires. On les moyenne
+quotidiennement. 
+
+```{r rhone1_2_day}
+air.rhone1.jour <- aggregate(Valeur ~ date + station + code_polluant, air.rhone1, mean, na.rm = TRUE)
+colnames(air.rhone1.jour)[ncol(air.rhone1.jour)] <- "valeur"
+>>>>>>> upstream/master
 
 var <- as.data.frame(strsplit(as.character(air.rhone1bis$variable),"|"))
+
+tab_etat <- aggregate(Valeur ~ date + station + code_polluant + Etat,air.rhone1,length)
+tab_etat <- dcast(tab_etat,formula = date + station + code_polluant ~ Etat, value.var="Valeur")
+tab_etat[is.na(tab_etat)] <- 0
+tab_etat$tot <- tab_etat$A + tab_etat$D + tab_etat$N + tab_etat$R
+
+tab_etat$A <- round(tab_etat$A / tab_etat$tot,3)
+tab_etat$D <- round(tab_etat$D / tab_etat$tot,3)
+tab_etat$N <- round(tab_etat$N / tab_etat$tot,3)
+tab_etat$R <- round(tab_etat$R / tab_etat$tot,3)
+
+colnames(tab_etat)[4:8] <- c("etat_A","etat_D","etat_N","etat_R","nb_mesure")
+
+air.rhone1.jour <- inner_join(air.rhone1.jour,tab_etat)
+
+head(air.rhone.jour)
 
 ```
