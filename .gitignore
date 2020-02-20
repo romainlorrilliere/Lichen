@@ -46,3 +46,4 @@ my*
 *.Rmd#
 .#my_exploration.r
 .#exploration.Rmd
+*.md
