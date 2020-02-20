@@ -125,7 +125,7 @@ premiere_col <- c(premiere_col,"arbre","arbre_num","arbre_nbtot","region","site_
 d.ge <- data.table(melt(d.ge, id.vars = premiere_col))
 head(d.ge)
 d.ge$face <- substr(d.ge$variable,1,1)
-vecFace <- c("N"="Nord","E"="ESt","S"="Sud","O"="Ouest")
+vecFace <- c("N"="Nord","E"="Est","S"="Sud","O"="Ouest")
 d.ge$face<- vecFace[d.ge$face]
 d.ge$sample <- as.numeric(substr(d.ge$variable,2,nchar(as.character(d.ge$variable))))
 
@@ -231,11 +231,28 @@ summary(air.rhone1)
 ```
 
 
-Les donnes de 2004 à 2007 les données sont horaires. Ont les moyennes
+Les données de 2004 à 2007 les données sont horaires. On les moyenne
 quotidiennement. 
 
 ```{r rhone1_2_day}
-air.rhone1.jour <- aggregate()
+air.rhone1.jour <- aggregate(Valeur ~ date + station + code_polluant, air.rhone1, mean, na.rm = TRUE)
+colnames(air.rhone1.jour)[ncol(air.rhone1.jour)] <- "valeur"
 
+
+tab_etat <- aggregate(Valeur ~ date + station + code_polluant + Etat,air.rhone1,length)
+tab_etat <- dcast(tab_etat,formula = date + station + code_polluant ~ Etat, value.var="Valeur")
+tab_etat[is.na(tab_etat)] <- 0
+tab_etat$tot <- tab_etat$A + tab_etat$D + tab_etat$N + tab_etat$R
+
+tab_etat$A <- round(tab_etat$A / tab_etat$tot,3)
+tab_etat$D <- round(tab_etat$D / tab_etat$tot,3)
+tab_etat$N <- round(tab_etat$N / tab_etat$tot,3)
+tab_etat$R <- round(tab_etat$R / tab_etat$tot,3)
+
+colnames(tab_etat)[4:8] <- c("etat_A","etat_D","etat_N","etat_R","nb_mesure")
+
+air.rhone1.jour <- inner_join(air.rhone1.jour,tab_etat)
+
+head(air.rhone.jour)
 
 ```
