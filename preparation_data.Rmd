@@ -21,7 +21,7 @@ pdf_document:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, cache=FALSE,eval=TRUE)
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, cache=TRUE,eval=TRUE)
 ```
 
 # Initialisation
@@ -124,16 +124,16 @@ for(o in  1:length(onglets)) {
     site <- onglets[o]
 
    ## cat("\n",o," ",site,"::",sep="")
-    d <- read.xlsx(filename, sheet = o,colNames =FALSE,skipEmptyRows=FALSE)
-if(o==1) my_kable_print(head(d),caption="Entête du premier onglet des données Rhône")
+    dxlsx <- read.xlsx(filename, sheet = o,colNames =FALSE,skipEmptyRows=FALSE)
+    if(o==1) my_kable_print(head(dxlsx),caption="Entête du premier onglet des données Rhône")
 
-    veca <- grep("Arbre",d[,1])
+    veca <- grep("Arbre",dxlsx[,1])
     for(a in 1:length(veca)) {
         ## a <- 1
        ## cat(" -",a,":",sep="" )
         starta <- veca[a]
         if(a == length(veca)) enda <- veca[a] + 30  else enda <- veca[a+1]-1
-        da <- d[starta:enda,]
+        da <- dxlsx[starta:enda,]
         da <- da[!(is.na(da[,1])),]
         rownames(da) <- da[,1]
         da <- da[,-1]
@@ -190,9 +190,9 @@ dd2 <- dd2[,c("site","arbre","face","sample","sp","ab","NAME","CODE_INSEE","Dept
 __sauvegarde__: _data/data_lyon_coord.csv_
 
 ```{r data_rhone_3}
-cat("  --> data/data_lyon_coord.csv")
+##cat("  --> data/data_lyon_coord.csv")
 write.csv(dd2,"data/data_lyon_coord.csv",row.names=FALSE)
-cat("   DONE !\n")
+##cat("   DONE !\n")
 ```
 
 
@@ -202,7 +202,7 @@ cat("   DONE !\n")
 * _Data_Lyon.csv_ : nom des sites + abondance des lichens par face et par quadra
 * _Data_rhone_coord.csv_ : nom des sites + abondance des lichens par face et par quadrat + nom de commune + coordonnés (en L93) => __c'est ce fichier qu'on utilise__
 
-```{r data_rhone0,eval=TRUE}
+```{r data_rhone0}
 d.rhone <- fread("data/data_rhone_coord.csv")
 my_kable_print(head(d.rhone),caption="Entête des données Rhones importées")
 
@@ -547,10 +547,6 @@ write.csv(d,"data/data_spclean_lichen_rhone_grandest.csv",row.names=FALSE)
 
 ```
 
-```{r setup2, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, cache=TRUE,eval=FALSE)
-```
-
 
 # Les données qualité de l'air
 
@@ -659,7 +655,7 @@ Importation de la table de traduction des nom de polluants en code_polluant
 
 ```{r air_rhone4}
 code_po <- fread("library/code_polluants.csv")
-my_kable_print(code_po,caption="Table de simplification des polluants",scroll_width = "300px")
+my_kable_print(code_po,caption="Table de simplification des polluants",scroll_height = "500px",scroll_width = "300px")
 
 
 ```
@@ -690,7 +686,7 @@ quotidiennement.
 * etatN: proportion du nombre de etat == N lors durant la journée
 * etatR: proportion du nombre de etat == R lors durant la journée
 
-```{r rhone2_2_day, eval=TRUE}
+```{r rhone2_2_day}
 air.rhone2.jour <- aggregate(Valeur ~ date + station + code_polluant, air.rhone2, mean, na.rm = TRUE)
 colnames(air.rhone2.jour)[ncol(air.rhone2.jour)] <- "valeur"
 
