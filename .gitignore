@@ -10,7 +10,7 @@ data_csv/
 DB_import/
 outputImport/
 output/
-
+*data_cache/
 export/
 data_various/
 
