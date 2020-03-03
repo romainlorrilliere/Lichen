@@ -47,3 +47,4 @@ my*
 .#my_exploration.r
 .#exploration.Rmd
 *.md
+.#preparation_data.Rmd
