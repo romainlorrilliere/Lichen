@@ -533,10 +533,69 @@ d <- data.table(inner_join(d,dsp))
 lesColonnes <- c("date_str","annee_str","annee_min","annee_max","region","site_id","site_code","commune","insee","dept","lon_l93","lat_l93","arbre_id","arbre_num","arbre_nbtot","arbre_sp_fr","arbre_sp_sc","arbre_circ","face","sample","sp_brut","sp","ab")
 
 d <- d[,lesColonnes,with=FALSE]
-my_kable_print(head(d),caption="Les données lichens")
 
 
 ```
+
+
+Il reste des noms noms comformes donc on fait une correction à la main
+à partir d'une table de correction préparée par Laure
+_library/correction-non-sp.csv_
+
+```{r checkspTable3.1}
+
+d_cor_sp <- fread("library/correction-non-sp.csv")
+my_kable_print(d_cor_sp,caption="Table de correction des erreurs résiduelles des noms d'espèces",scroll_height = "500px", scroll_width = "500px")
+
+colnames(d_cor_sp)[colnames(d_cor_sp)=="sp_brut"] <- "sp"
+
+```
+
+```{r checksp3.2}
+
+d <- data.table(left_join(d,d_cor_sp))
+
+d$sp <- ifelse(is.na(d$sp_clean),d$sp,d$sp_clean)
+
+
+
+dsp2 <- data.table(table(d$sp))
+colnames(dsp2) <- c("sp","nb_rep")
+
+dsp.agg <- aggregate(sp_brut ~ sp , unique(d[,c("sp","sp_brut")]), paste,collapse= "' | '")
+
+dsp.agg <- inner_join(dsp2,dsp.agg)
+dsp.agg <- dsp.agg[,c("sp","nb_rep","sp_brut")]
+
+dsp.agg$sp_brut <- paste0("'",dsp.agg$sp_brut,"'")
+dsp.agg$sp <- paste0("'",dsp.agg$sp,"'")
+
+dsp.agg <- data.table(dsp.agg[order(dsp.agg$nb_rep,decreasing=TRUE),])
+nbsp <- nrow(dsp.agg)
+```
+Après correction finale nous conservons `r nbsp` taxons, avec la table de
+traduction suivante:  
+
+```{r checksp3.3}
+my_kable_print(dsp.agg,caption="Corrections finales des noms d'espèces",scroll_height = "500px", scroll_width = "500px")
+
+```
+
+
+Les données finales: 
+
+```{r checksp3.4}
+
+d <- d[,lesColonnes,with=FALSE]
+my_kable_print(head(d),caption="Les données lichens")
+
+```
+
+Dans un premier temps pour les analyses de test d'efficacité du
+protocol lichenGo seule les données du Rhones seront utilisé car il
+n'y a pas de sites avec 3 arbres échantillonés dans les données du
+Grand-Est. 
+
 
 Sauvegarde dans _data/data_spclean_lichen_rhone_grandest.csv_
 
@@ -675,6 +734,28 @@ my_kable_print(head(air.rhone2),caption="Données pollution horaire Rhône 2008-
 
 ```
 
+Signification des types de mesures : 
+La colonne " état " sert à caractérser chaque donnée. Les données que vous pouvez exploiter sont codées :
+* _A_: exploitable
+* _P_: dérive mais exploitable, c'est peut être l'état _D_ (__à
+  vérifier par Laure?__)
+* _O_: corrigée
+* _R_: recalculée
+
+On conserve les état A,D (__sous réserve que soit bien les données
+dérivées__) et les R
+
+
+
+
+
+```{r air_rhone5.1}
+
+air.rhone2 <- subset(air.rhone2,Etat %in% c("A","D","R"))
+	
+```	
+
+
 
 Les données de 2004 à 2007 sont horaires. On les moyenne
 quotidiennement. 
@@ -683,7 +764,6 @@ quotidiennement.
 * tot: nombre de mesure durant la journée
 * etatA: proportion du nombre de etat == A lors durant la journée
 * etatD: proportion du nombre de etat == D lors durant la journée
-* etatN: proportion du nombre de etat == N lors durant la journée
 * etatR: proportion du nombre de etat == R lors durant la journée
 
 ```{r rhone2_2_day}
@@ -694,20 +774,93 @@ colnames(air.rhone2.jour)[ncol(air.rhone2.jour)] <- "valeur"
 tab_etat <- aggregate(Valeur ~ date + station + code_polluant + Etat,air.rhone2,length)
 tab_etat <- dcast(tab_etat,formula = date + station + code_polluant ~ Etat, value.var="Valeur")
 tab_etat[is.na(tab_etat)] <- 0
-tab_etat$tot <- tab_etat$A + tab_etat$D + tab_etat$N + tab_etat$R
+tab_etat$tot <- tab_etat$A + tab_etat$D + tab_etat$R
 
 tab_etat$A <- round(tab_etat$A / tab_etat$tot,3)
 tab_etat$D <- round(tab_etat$D / tab_etat$tot,3)
-tab_etat$N <- round(tab_etat$N / tab_etat$tot,3)
 tab_etat$R <- round(tab_etat$R / tab_etat$tot,3)
 
-colnames(tab_etat)[4:8] <- c("etat_A","etat_D","etat_N","etat_R","nb_mesure")
+colnames(tab_etat)[4:7] <- c("etat_A","etat_D","etat_R","nb_mesure")
 
 air.rhone2.jour <- inner_join(air.rhone2.jour,tab_etat)
 
 my_kable_print(head(air.rhone2.jour),caption="Donnée pollution quotidienne Rhône 2008-2013")
 
+
+my_kable_print(summary(air.rhone2.jour),caption="Donnée pollution quotidienne Rhône 2008-2013")
+
+
 ```
+
+__!! PROBLEME !!__ 
+il y a parfois plus de 24 mesure par jour alors
+que c'est une mesure par heure
+
+
+Le premier problème c'est qu'il y a plusieur mesure à la même heure
+pour un code_polluant par exemple dans la station "_A7 Nord-Isère_" pour
+PM10 nous avons: "_Part PM10 ajustee_","_Particule PM10_","_Particule
+PM10 FDMS_"
+
+
+
+```{r air_rhone5.1.1}
+
+agg_air.rhone2 <- aggregate(Valeur ~ date_complet + station + code_polluant + Etat,data=air.rhone2,length)
+colnames(agg_air.rhone2)[5] <- "nb_mesure"
+nrow.tot <- nrow(agg_air.rhone2)
+agg_air.rhone2 <- subset(agg_air.rhone2,nb_mesure > 1)
+nrow.pb <- nrow(agg_air.rhone2)
+
+ratio.pb <- round(nrow.pb / nrow.tot * 100,2)
+d_pb_doublon <- inner_join(air.rhone2,agg_air.rhone2)
+
+pb.polluants <- unique(d_pb_doublon$code_polluant)
+nb_polluants <- length(pb.polluants)
+txt.polluants <- paste0("'",paste(pb.polluants,collapse="','"),"'")
+
+
+pb.stations <- unique(d_pb_doublon$station)
+nb_stations <- length(pb.stations)
+txt.stations <- paste0("'",paste(pb.stations,collapse="','"),"'")
+
+my_kable_print(head(d_pb_doublon),caption="Problème des doublon de mesure")
+
+
+
+```
+
+Ce problème de doublon de meseure concerne __`r nb_polluants`
+code_polluant__ (_`r txt.polluants`_) et  __`r nb_stations`
+stations__ (_`r txt.stations`_) 
+
+
+__Que fait on ? une moyenne ? on ne conserve qu'une seule mesure?__
+
+
+
+
+Ensuite si on aura encore plusieurs etat par mesure je suggère de 
+priotériser les mesures comme suit: 
+
+_A_ >> _D_ >> _R_
+
+
+
+```{r air_rhone5.2}
+tab_etat_h <- dcast(air.rhone2,formula = date_complet + station + code_polluant ~ Etat, value.var="Valeur")
+
+## j'ai un pb ici
+
+tab_etat_h <- tab_etat_h[order(tab_etat_h$station,tab_etat_h$date,tab_etat_h$code_polluant),]
+
+
+
+
+```
+
+
+
 
 Finalisation: sauvegarde de la table: data/polluant_rhone2_jour.csv \n")
 ```{r air_rhone6}
@@ -717,5 +870,12 @@ write.csv(air.rhone2.jour,"data/polluant_rhone2_jour.csv",row.names=FALSE)
 
 __Reste à faire!__
 
-- Il faut récupérer le sens des états 
+- corriger les doublons de mesure de polluants
+
+
+
+## Grand-Est
+
+Pour l'instant nous n'allons pas utiliser c'est données donc on remet
+à plus tard leur pré-traitement!
 
