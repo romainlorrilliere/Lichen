@@ -626,12 +626,8 @@ organisme, station, date,heure,mesure,type,valeur,etat...
 
 ### Les donnes de 2004 à 2008: _extraction\_donnees\_sorbonne.xlsx_
 
-__A faire!__
 
-### Les donnes de 2008 à 2013: _donnees\_sorbonne.csv_ 
-
-
-__ Importation__
+__Importation__
 
 Importation de la table : _data/donnees_sorbonne.csv_
 
@@ -640,7 +636,7 @@ Importation de la table : _data/donnees_sorbonne.csv_
 air.rhone2 <- fread("data/donnees_sorbonne.csv")
 
 
-my_kable_print(head(air.rhone2),caption="Les données polutions brute de 2008 à 2013")
+my_kable_print(head(air.rhone2),caption="Les données polutions brute de 2004 à 2008")
 
 ```
 
@@ -730,12 +726,14 @@ air.rhone2 <- left_join(air.rhone2,code_po)
 air.rhone2$code_polluant <- as.factor(air.rhone2$code_polluant)
 air.rhone2$date <- as.Date(substr(air.rhone2$date_complet,1,10),"%d/%m/%Y")
 
-my_kable_print(head(air.rhone2),caption="Données pollution horaire Rhône 2008-2013")
+my_kable_print(head(air.rhone2),caption="Données pollution horaire Rhône 2004-2008")
 
 ```
 
 Signification des types de mesures : 
-La colonne " état " sert à caractérser chaque donnée. Les données que vous pouvez exploiter sont codées :
+La colonne " état " sert à caractérser chaque donnée. Les données que
+vous pouvez exploiter sont codées :
+
 * _A_: exploitable
 * _P_: dérive mais exploitable, c'est peut être l'état _D_ (__à
   vérifier par Laure?__)
@@ -760,11 +758,11 @@ air.rhone2 <- subset(air.rhone2,Etat %in% c("A","D","R"))
 Les données de 2004 à 2007 sont horaires. On les moyenne
 quotidiennement. 
 
-* Valeur: moyenne journalière de la valeur
-* tot: nombre de mesure durant la journée
-* etatA: proportion du nombre de etat == A lors durant la journée
-* etatD: proportion du nombre de etat == D lors durant la journée
-* etatR: proportion du nombre de etat == R lors durant la journée
+* _Valeur_: moyenne journalière de la valeur
+* _tot_: nombre de mesure durant la journée
+* _etatA_: proportion du nombre de etat == A lors durant la journée
+* _etatD_: proportion du nombre de etat == D lors durant la journée
+* _etatR_: proportion du nombre de etat == R lors durant la journée
 
 ```{r rhone2_2_day}
 air.rhone2.jour <- aggregate(Valeur ~ date + station + code_polluant, air.rhone2, mean, na.rm = TRUE)
@@ -784,10 +782,10 @@ colnames(tab_etat)[4:7] <- c("etat_A","etat_D","etat_R","nb_mesure")
 
 air.rhone2.jour <- inner_join(air.rhone2.jour,tab_etat)
 
-my_kable_print(head(air.rhone2.jour),caption="Donnée pollution quotidienne Rhône 2008-2013")
+my_kable_print(head(air.rhone2.jour),caption="Donnée pollution quotidienne Rhône 2004-2008")
 
 
-my_kable_print(summary(air.rhone2.jour),caption="Donnée pollution quotidienne Rhône 2008-2013")
+my_kable_print(summary(air.rhone2.jour),caption="Donnée pollution quotidienne Rhône 2004-2008")
 
 
 ```
@@ -873,6 +871,13 @@ __Reste à faire!__
 - corriger les doublons de mesure de polluants
 
 
+
+
+
+
+### Les donnes de 2008 à 2013: _donnees\_sorbonne.csv_ 
+
+__A faire!__
 
 ## Grand-Est
 
