@@ -175,7 +175,7 @@ gg <- gg + scale_colour_gradient(low = "#4575b4",high = "#d73027")
 gg <- gg + labs(x="",y="",colour="Distance to\nthe station",size="Number of\navailable years")
 print(gg)
 
-ggsave("output/loc_arbre_polution.png",gg)
+ggsave("output/loc_arbre_polution.png",gg,height=9,width=10)
 
 
 
