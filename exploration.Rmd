@@ -114,6 +114,9 @@ v_near <- st_nearest_feature(dloc.sf,dpol.sf)
 dpol_near.sf <- dpol.sf[v_near,]
 v_dist <- round(as.vector(st_distance(dloc.sf,dpol_near.sf,by_element = TRUE))/1000,3)
 
+cat("Les Distances à la station la plus proche:\n")
+print(summary(v_dist))
+
 
 
 projcrs.wgs84 <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
@@ -129,6 +132,8 @@ table_nb_arbre <- as.data.frame(table(dpol_near.w84$id_site))
 colnames(table_nb_arbre) <- c("id_site","nb_arbre")
 table_nb_arbre$id_site <- as.integer(as.character(table_nb_arbre$id_site))
 
+table_nb_arbre <- table_nb_arbre[order(table_nb_arbre$nb_arbre,decreasing=TRUE),]
+my_kable_print(table_nb_arbre,caption="Nombre d'arbre par station atmo")
 
 
 dloc.sf <- st_transform(dloc.sf,crs = projcrs.wgs84)
