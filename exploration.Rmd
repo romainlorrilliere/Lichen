@@ -35,6 +35,10 @@ library(ggplot2)
 library(kableExtra)
 library(knitr)
 library(sf)
+library(OpenStreetMap)
+
+if(!("output" %in% dir())) dir.create("output")
+
 ```
 
 
@@ -65,39 +69,40 @@ dloc <- unique(data[,c("site_id","site_code","lon_l93","lat_l93")])
 dloc$lon_l93 <- as.numeric(dloc$lon_l93)
 dloc$lat_l93 <- as.numeric(dloc$lat_l93)
 
+dloc <- aggregate(cbind(dloc$lon_l93,dloc$lat_l93)~site_id+site_code,dloc,mean)
+colnames(dloc)[3:4] <- c("lon_l93","lat_l93")
 
 
-polluant <- read.csv2("data/coordonnees_stations_atmoAURA_2.csv",header=TRUE,blank.lines.skip=TRUE)
-polluant <- subset(polluant,!(is.na(altitude)))
-polluant$coord_y_l93 <- as.numeric(as.character(polluant$coord_y_l93))
-polluant$coord_x_l93 <- as.numeric(as.character(polluant$coord_y_l93))
+dpol <- fread("data/coordonnees_stations-2.csv")
+dpol <- subset(dpol,!(is.na(altitude)))
+dpol$coord_y_l93 <- as.numeric(as.character(dpol$coord_y_l93))
+dpol$coord_x_l93 <- as.numeric(as.character(dpol$coord_x_l93))
+dpol$date_ouverture <- as.Date(dpol$date_ouverture,"%j/%m/%Y")
+dpol$date_dispo_mesures <- as.Date(dpol$date_dispo_mesures,"%j/%m/%Y")
+dpol$date_fermeture <- as.Date(dpol$date_fermeture,"%j/%m/%Y")
+dpol$first_year <- ifelse(is.na(dpol$date_dispo_mesures),year(dpol$date_ouverture),year(dpol$date_dispo_mesures))
+dpol$first_year[dpol$first_year<2005] <- 2005
+dpol$last_year <- ifelse(is.na(dpol$date_fermeture),2012,year(dpol$date_fermeture))
+dpol$last_year[dpol$last_year > 2012] <- 2012
+dpol$nb_year <- dpol$last_year - dpol$first_year + 1
+dpol$nb_year[dpol$nb_year < 0] <- 0 
+
+dpol_all <- dpol
+dpol <- dpol[,c("id_site","nb_year","first_year","last_year","coord_y_l93","coord_x_l93")]
+dpol <- subset(dpol, nb_year > 3)
+
+projcrs.l93 <- "+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs" #Lambert 93
 
 
-projcrs <- "+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs" #Lambert 93
-
-dloc.sf <- st_as_sf(dloc,coords = c("lon_l93", "lat_l93"), crs = projcrs)
-dpol.sf <- st_as_sf(polluant,coords = c("coord_y_l93","coord_x_l93"),crs=projcrs)
-
-
+dloc.sf <- st_as_sf(dloc,coords = c("lon_l93", "lat_l93"), crs = projcrs.l93)
+dpol.sf <- st_as_sf(dpol,coords = c("coord_x_l93","coord_y_l93"),crs=projcrs.l93)
+dpol_all.sf <- st_as_sf(dpol_all,coords = c("coord_x_l93","coord_y_l93"),crs=projcrs.l93)
 
 
 
 ```
 
 
-
-
-
-
-```{r carto1}
-
-
-gg <- ggplot() + geom_sf(data=dloc.sf,colour="green") + geom_sf(data=dpol.sf,colour="red")
-print(gg)
-		
-
-
-```
 
 # Calcul de distance
 
@@ -105,7 +110,80 @@ on estime les distances entre les arbres et la station la plus proche
 
 ```{r distance}
 
-d_near <- st_nearest_feature(dloc.sf,dpol.sf)
+v_near <- st_nearest_feature(dloc.sf,dpol.sf)
+dpol_near.sf <- dpol.sf[v_near,]
+v_dist <- round(as.vector(st_distance(dloc.sf,dpol_near.sf,by_element = TRUE))/1000,3)
+
+
+
+projcrs.wgs84 <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+
+dpol_near.sf <- st_transform(dpol_near.sf,crs = projcrs.wgs84)
+dpol_near.coord.w84 <- st_coordinates(dpol_near.sf)
+colnames(dpol_near.coord.w84) <- c("pol_near_lon_wgs84","pol_near_lat_wgs84")
+dpol_near.w84 <- cbind(st_drop_geometry(dpol_near.sf), dpol_near.coord.w84)
+
+
+
+table_nb_arbre <- as.data.frame(table(dpol_near.w84$id_site))
+colnames(table_nb_arbre) <- c("id_site","nb_arbre")
+table_nb_arbre$id_site <- as.integer(as.character(table_nb_arbre$id_site))
+
+
+
+dloc.sf <- st_transform(dloc.sf,crs = projcrs.wgs84)
+dloc.coord.w84 <- st_coordinates(dloc.sf)
+colnames(dloc.coord.w84) <- c("lon_wgs84","lat_wgs84")
+dloc.w84 <- cbind(st_drop_geometry(dloc.sf), dloc.coord.w84)
+dloc.w84 <- data.frame(dloc.w84,dpol_near.w84)
+dloc.w84 <- data.frame(dloc.w84,distance=as.vector(v_dist))
+dloc.w84 <- inner_join(dloc.w84,table_nb_arbre)
+
+
+
+dpol_all.sf <- st_transform(dpol_all.sf,crs = projcrs.wgs84)
+dpol_all.coord.w84 <- st_coordinates(dpol_all.sf)
+colnames(dpol_all.coord.w84) <- c("lon_wgs84","lat_wgs84")
+dpol_all.w84 <- cbind(st_drop_geometry(dpol_all.sf), dpol_all.coord.w84)
+
+
+degreg <- 0.1
+lat_min <- min(dloc.w84$lat_wgs84,na.rm=TRUE) - degreg
+lat_max <- max(dloc.w84$lat_wgs84,na.rm=TRUE) + degreg
+lon_min <- min(dloc.w84$lon_wgs84,na.rm=TRUE) - degreg
+lon_max <- max(dloc.w84$lon_wgs84,na.rm=TRUE) + degreg
+
+dpol_near_unique.w84 <- unique(dpol_near.w84)
+dpol_out.w84 <- subset(dpol_all.w84,!(id_site %in% dpol_near_unique.w84$id_site))
+dpol_out.w84 <- subset(dpol_out.w84, lon_wgs84 > lon_min & lon_wgs84 < lon_max & lat_wgs84 > lat_min & lat_wgs84 < lat_max)
+
+
+
+map <- openmap(c(lat_max,lon_min), c(lat_min,lon_max), zoom = NULL,type = c("osm", "stamen-toner", "stamen-terrain","stamen-watercolor", "esri","esri-topo")[1], mergeTiles = TRUE)
+map.latlon <- openproj(map, projection = projcrs.wgs84)
+
+gg <- autoplot(map.latlon)
+#gg <- gg + coord_cartesian(xlim=c(lon_min,lon_max),ylim=c(lat_min,lat_max))
+gg <- gg + geom_point(data=dpol_out.w84, aes(x=lon_wgs84,y=lat_wgs84,size=nb_year),colour="black",alpha=0.6)
+gg <- gg + geom_segment(data = dloc.w84,aes(x=lon_wgs84,y=lat_wgs84,xend=pol_near_lon_wgs84,yend=pol_near_lat_wgs84),size=2,alpha=0.8,colour="white")
+gg <- gg + geom_point(data=dpol_near_unique.w84, aes(x=pol_near_lon_wgs84,y=pol_near_lat_wgs84,size=nb_year),colour="#f46d43",alpha=0.8)
+gg <- gg + geom_segment(data = dloc.w84,aes(x=lon_wgs84,y=lat_wgs84,xend=pol_near_lon_wgs84,yend=pol_near_lat_wgs84,colour=distance),size=1.2,alpha=0.8)
+gg <- gg + geom_point(data=dpol_near_unique.w84, aes(x=pol_near_lon_wgs84,y=pol_near_lat_wgs84,size=nb_year),colour="#f46d43",alpha=0.3)
+gg <- gg + geom_point(data = dloc.w84,aes(x=lon_wgs84,y=lat_wgs84),colour = "#4d9221",size=4)
+gg <- gg + geom_point(data = dloc.w84,aes(x=lon_wgs84,y=lat_wgs84),colour = "white",size=2)
+gg <- gg + scale_colour_gradient(low = "#4575b4",high = "#d73027")
+gg <- gg + labs(x="",y="",colour="Distance to\nthe station",size="Number of\navailable years")
+print(gg)
+
+ggsave("output/loc_arbre_polution.png",gg)
+
+
+
+
+
+
+
+
 
 
 ```
