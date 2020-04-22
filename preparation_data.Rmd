@@ -174,7 +174,7 @@ write.csv(dd,"data/data_lyon.csv",row.names=FALSE)
 
 ### Ajout des coordonées 
 Importation du shapefile des point des observations _data/Point_observation.shp_
-
+	
 ```{r data_rhone_2}
 points_sf <- read_sf('data/Point_observation.shp')
 points <- points_sf
@@ -185,6 +185,8 @@ colnames(points)[1] <- "site"
 dd2 <- full_join(dd,points)
 
 dd2 <- dd2[,c("site","arbre","face","sample","sp","ab","NAME","CODE_INSEE","Dept","X","Y")]
+
+dd2$face <- gsub("_","",dd2$face)
 ```
 
 __sauvegarde__: _data/data_lyon_coord.csv_
