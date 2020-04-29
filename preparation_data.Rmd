@@ -111,7 +111,7 @@ lesColonnes <- c("date_str","annee_str","annee_min","annee_max","region","site_i
 
 Importattion des données qui sont organisé en onglets dans le fichier _data/IBLE_vallee_du_Rhone_1.xlsx_.
 
-```{r data_rhone_0}
+```{r data_rhone_0,eval=FALSE}
 filename <- "data/IBLE_vallee_du_Rhone_1.xlsx"
 
 
@@ -123,14 +123,14 @@ for(o in  1:length(onglets)) {
 
     site <- onglets[o]
 
-   ## cat("\n",o," ",site,"::",sep="")
+    cat("\n",o," ",site,"::",sep="")
     dxlsx <- read.xlsx(filename, sheet = o,colNames =FALSE,skipEmptyRows=FALSE)
-    if(o==1) my_kable_print(head(dxlsx),caption="Entête du premier onglet des données Rhône")
+   if(o==1) my_kable_print(head(dxlsx),caption="Entête du premier onglet des données Rhône")
 
     veca <- grep("Arbre",dxlsx[,1])
     for(a in 1:length(veca)) {
         ## a <- 1
-       ## cat(" -",a,":",sep="" )
+        cat(" -",a,":",sep="" )
         starta <- veca[a]
         if(a == length(veca)) enda <- veca[a] + 30  else enda <- veca[a+1]-1
         da <- dxlsx[starta:enda,]
@@ -158,14 +158,18 @@ for(o in  1:length(onglets)) {
 
 
 }
-#cat("\n")
+cat("\n")
+
+
+
+
 dd[is.na(dd)] <- 0
 dd$ab <- as.numeric(dd$ab)
 ```
 
 __sauvegarde__: _data/data_lyon.csv_
 
-```{r data_rhone_1}
+```{r data_rhone_1,eval=FALSE}
 
 write.csv(dd,"data/data_lyon.csv",row.names=FALSE)
 
@@ -175,7 +179,7 @@ write.csv(dd,"data/data_lyon.csv",row.names=FALSE)
 ### Ajout des coordonées 
 Importation du shapefile des point des observations _data/Point_observation.shp_
 	
-```{r data_rhone_2}
+```{r data_rhone_2,eval=FALSE}
 points_sf <- read_sf('data/Point_observation.shp')
 points <- points_sf
 st_geometry(points) <- NULL
@@ -191,7 +195,7 @@ dd2$face <- gsub("_","",dd2$face)
 
 __sauvegarde__: _data/data_lyon_coord.csv_
 
-```{r data_rhone_3}
+```{r data_rhone_3,eval=FALSE}
 ##cat("  --> data/data_lyon_coord.csv")
 write.csv(dd2,"data/data_lyon_coord.csv",row.names=FALSE)
 ##cat("   DONE !\n")
@@ -205,7 +209,7 @@ write.csv(dd2,"data/data_lyon_coord.csv",row.names=FALSE)
 * _Data_rhone_coord.csv_ : nom des sites + abondance des lichens par face et par quadrat + nom de commune + coordonnés (en L93) => __c'est ce fichier qu'on utilise__
 
 ```{r data_rhone0}
-d.rhone <- fread("data/data_rhone_coord.csv")
+d.rhone <- fread("data/data_lyon_coord.csv")
 my_kable_print(head(d.rhone),caption="Entête des données Rhones importées")
 
 
@@ -546,7 +550,7 @@ _library/correction-non-sp.csv_
 
 ```{r checkspTable3.1}
 
-d_cor_sp <- fread("library/correction-non-sp.csv")
+d_cor_sp <- fread("library/correction_nom_sp.csv")
 my_kable_print(d_cor_sp,caption="Table de correction des erreurs résiduelles des noms d'espèces",scroll_height = "500px", scroll_width = "500px")
 
 colnames(d_cor_sp)[colnames(d_cor_sp)=="sp_brut"] <- "sp"
@@ -576,7 +580,7 @@ dsp.agg <- data.table(dsp.agg[order(dsp.agg$nb_rep,decreasing=TRUE),])
 nbsp <- nrow(dsp.agg)
 ```
 Après correction finale nous conservons `r nbsp` taxons, avec la table de
-traduction suivante:  
+traduction suivante:
 
 ```{r checksp3.3}
 my_kable_print(dsp.agg,caption="Corrections finales des noms d'espèces",scroll_height = "500px", scroll_width = "500px")
@@ -589,6 +593,11 @@ Les données finales:
 ```{r checksp3.4}
 
 d <- d[,lesColonnes,with=FALSE]
+
+lesColonnes_eng <- c("date_str","year_str","year_min","year_max","region","site_id","site_code","city","insee","dept","lon_l93","lat_l93","tree_id","tree_num","tree_nbtot","tree_sp_fr","tree_sp_sc","tree_circ","face","sample","sp_brut","sp","coverage")
+
+d <- setnames(d, lesColonnes,lesColonnes_eng)
+
 my_kable_print(head(d),caption="Les données lichens")
 
 ```
@@ -599,12 +608,11 @@ n'y a pas de sites avec 3 arbres échantillonés dans les données du
 Grand-Est. 
 
 
-Sauvegarde dans _data/data_spclean_lichen_rhone_grandest.csv_
+Sauvegarde dans _data/data_eng_spclean_lichen_rhone_grandest.csv_
 
 ```{r checksp4}
 
-write.csv(d,"data/data_spclean_lichen_rhone_grandest.csv",row.names=FALSE)
-
+write.csv(d,"data/data_eng_spclean_lichen_rhone_grandest.csv",row.names=FALSE)
 
 ```
 
@@ -633,7 +641,7 @@ __Importation__
 
 Importation de la table : _data/donnees_sorbonne.csv_
 
-```{r air_rhone}
+```{r air_rhone,eval=FALSE}
 
 air.rhone2 <- fread("data/donnees_sorbonne.csv")
 
@@ -649,7 +657,7 @@ Aggregation des champs de définition des mesures de polluants et
 retournement du tableau
 
 
-```{r air_rhone_1}
+```{r air_rhone_1,eval=FALSE}
 
  
 col <- apply(air.rhone2[1:4,],2,paste,collapse="#")
@@ -673,7 +681,7 @@ Re-construction des champs de definition des mesures de polluants:
 * _type_
 
 
-```{r air_rhone2}
+```{r air_rhone2,eval=FALSE}
 
 varunique <- unique(air.rhone2[,"variable"])
 ## dim(varunique)
@@ -696,7 +704,7 @@ Remise en deux colonnes:
 * _Valeur_
 * _Etat_
 
-```{r air_rhone3}
+```{r air_rhone3,eval=FALSE}
 
 air.rhone2 <- data.table(air.rhone2[,-2])
 air.rhone2 <- dcast(air.rhone2, formula = date_complet + station + polluant + periode ~ type, value.var = "value")
@@ -710,7 +718,7 @@ Les polluants sont traduit en code, renseigné dans le fichier : _library/code_p
 Importation de la table de traduction des nom de polluants en code_polluant
 
 
-```{r air_rhone4}
+```{r air_rhone4,eval=FALSE}
 code_po <- fread("library/code_polluants.csv")
 my_kable_print(code_po,caption="Table de simplification des polluants",scroll_height = "500px",scroll_width = "300px")
 
@@ -722,7 +730,7 @@ Création des colonnes:
 * _code\_polluant_
 * _date_
 
-```{r air_rhone5}
+```{r air_rhone5,eval=FALSE}
 
 air.rhone2 <- left_join(air.rhone2,code_po)
 air.rhone2$code_polluant <- as.factor(air.rhone2$code_polluant)
@@ -749,7 +757,7 @@ dérivées__) et les R
 
 
 
-```{r air_rhone5.1}
+```{r air_rhone5.1,eval=FALSE}
 
 air.rhone2 <- subset(air.rhone2,Etat %in% c("A","D","R"))
 	
@@ -766,7 +774,7 @@ quotidiennement.
 * _etatD_: proportion du nombre de etat == D lors durant la journée
 * _etatR_: proportion du nombre de etat == R lors durant la journée
 
-```{r rhone2_2_day}
+```{r rhone2_2_day,eval=FALSE}
 air.rhone2.jour <- aggregate(Valeur ~ date + station + code_polluant, air.rhone2, mean, na.rm = TRUE)
 colnames(air.rhone2.jour)[ncol(air.rhone2.jour)] <- "valeur"
 
@@ -804,7 +812,7 @@ PM10 FDMS_"
 
 
 
-```{r air_rhone5.1.1}
+```{r air_rhone5.1.1,eval=FALSE}
 
 agg_air.rhone2 <- aggregate(Valeur ~ date_complet + station + code_polluant + Etat,data=air.rhone2,length)
 colnames(agg_air.rhone2)[5] <- "nb_mesure"
@@ -847,7 +855,7 @@ _A_ >> _D_ >> _R_
 
 
 
-```{r air_rhone5.2}
+```{r air_rhone5.2,eval=FALSE}
 tab_etat_h <- dcast(air.rhone2,formula = date_complet + station + code_polluant ~ Etat, value.var="Valeur")
 
 ## j'ai un pb ici
@@ -863,7 +871,7 @@ tab_etat_h <- tab_etat_h[order(tab_etat_h$station,tab_etat_h$date,tab_etat_h$cod
 
 
 Finalisation: sauvegarde de la table: data/polluant_rhone2_jour.csv \n")
-```{r air_rhone6}
+```{r air_rhone6,eval=FALSE}
 write.csv(air.rhone2.jour,"data/polluant_rhone2_jour.csv",row.names=FALSE)
 ```
 
