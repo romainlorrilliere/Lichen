@@ -105,7 +105,7 @@ get_VDL <- function(d,plot=TRUE) {
     print(summary(d_vdl))
 
     if(plot) {
-        gg <- ggplot(data=d_vdl,aes(x="",y=vdl)) + geom_violin(draw_quantles=c(.25,.5,.75)) + geom_boxplot(notch=TRUE,width=.2, outlier.colour=NA)+ geom_jitter(width = 0.05,alpha=0.3)
+        gg <- ggplot(data=d_vdl,aes(x="",y=vdl)) + geom_violin(draw_quantiles=c(.25,.5,.75)) + geom_boxplot(notch=TRUE,width=.2, outlier.colour=NA)+ geom_jitter(width = 0.05,alpha=0.3)
         gg <- gg + labs(x="",y="VDL",title="Distribution du VDL sur les sites",subtitle="Les 3 quantiles 0.25, 0.5, 0.75")
 
         print(gg)
@@ -173,18 +173,23 @@ get_lichen_indic <- function() {
 
     library(psych)
 
+    file <- "output/indic_lichen_cor.png"
+
+    png(file)
 
     pairs.panels(d_lichen[,-1],
+
+
                  method = "pearson", # correlation method
                  hist.col = "#00AFBB",
                  density = TRUE,  # show density plots
                  ellipses = TRUE # show correlation ellipses
                  )
+    dev.off()
 
-
+   write.csv(d_lichen,"output/indic_lichen.csv")
 
     return(d_lichen)
-    write.csv(d_lichen,"outpout/indic_lichen.csv")
 
 
 }
