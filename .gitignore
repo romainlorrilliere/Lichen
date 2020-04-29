@@ -66,3 +66,4 @@ data/NDVIs.7z
 data/data_eng_spclean_lichen_rhone_grandest.csv
 .#my_biodiv.r
 .#biodiv.r
+library/_correction_nom_sp.csv
