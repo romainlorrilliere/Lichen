@@ -63,3 +63,6 @@ data/data_lyon_coord.csv
 data/data_rhone_coord.csv
 data/traitements au fil de leau.txt
 data/NDVIs.7z
+data/data_eng_spclean_lichen_rhone_grandest.csv
+.#my_biodiv.r
+.#biodiv.r
